@@ -1,0 +1,53 @@
+0. Переходим на сайт https://all-the-books.ru/authors/tolstoy-lev-nikolaevich/ и скачиваем все тома произведения «Война и мир» в формате txt.
+Переименовал их в: tom1.txt, tom2.txt, tom3.txt, tom4.txt
+
+1. Когда мы перетащили файлы с произведением Льва Толстого – мы перетащили их в файловую систему виртуальной машины, но не в HDFS, соответственно, в первую очередь нам нужно перенести их в папку нашего пользователя именно на HDFS.
+[cloudera@quickstart Downloads]$ hadoop version
+Hadoop 2.6.0-cdh5.13.0
+Subversion http://github.com/cloudera/hadoop -r 42e8860b182e55321bd5f5605264da4adc8882be
+Compiled by jenkins on 2017-10-04T18:08Z
+Compiled with protoc 2.5.0
+Я Перенёс файлы на HDFS через HUE (в браузере)!
+
+2. После того, как файлы окажутся на HDFS попробуйте выполнить команду, 
+которая выводит содержимое папки. Особенно обратите внимание на права доступа к вашим файлам.
+[cloudera@quickstart Downloads]$ hadoop fs -ls
+Found 4 items
+-rwxrw-rw-   1 cloudera cloudera     736519 2022-11-11 21:38 tom1.txt
+-rwxrw-rw-   1 cloudera cloudera     770324 2022-11-11 21:38 tom2.txt
+-rwxrw-rw-   1 cloudera cloudera     843205 2022-11-11 21:38 tom3.txt
+-rwxrw-rw-   1 cloudera cloudera     697960 2022-11-11 21:38 tom4.txt
+Или так:
+[cloudera@quickstart Downloads]$ hdfs dfs -ls /user/cloudera
+Found 4 items
+-rwxrw-rw-   1 cloudera cloudera     736519 2022-11-11 21:38 /user/cloudera/tom1.txt
+-rwxrw-rw-   1 cloudera cloudera     770324 2022-11-11 21:38 /user/cloudera/tom2.txt
+-rwxrw-rw-   1 cloudera cloudera     843205 2022-11-11 21:38 /user/cloudera/tom3.txt
+-rwxrw-rw-   1 cloudera cloudera     697960 2022-11-11 21:38 /user/cloudera/tom4.txt
+
+3. Далее сожмите все 4 тома в 1 файл.
+[cloudera@quickstart Downloads]$ hdfs dfs -appendToFile tom1.txt tom2.txt tom3.txt tom4.txt /user/cloudera/onefile.txt
+
+4. Теперь давайте изменим права доступа к нашему файлу. Чтобы с нашим файлом могли взаимодействовать коллеги, установите режим доступа, который дает полный доступ для владельца файла, а для сторонних пользователей возможность читать и выполнять.
+[cloudera@quickstart Downloads]$ hdfs dfs -chmod -R 766 /user/cloudera/onefile.txt
+
+5. Попробуйте заново использовать команду для вывода содержимого папки и обратите внимание как изменились права доступа к файлу.
+[cloudera@quickstart Downloads]$ hdfs dfs -ls /user/cloudera
+Found 5 items
+-rwxrw-rw-   1 cloudera cloudera    3784527 2022-11-11 22:10 /user/cloudera/onefile.txt
+
+6. Теперь попробуем вывести на экран информацию о том, сколько места на диске занимает наш файл. Желательно, чтобы размер файла был удобночитаемым.
+[cloudera@quickstart Downloads]$ hdfs dfs -du -h -x /user/cloudera/onefile.txt
+3.6 M  3.6 M  /user/cloudera/onefile.txt
+
+7. На экране вы можете заметить 2 числа. Первое число – это фактический размер файла, а второе – это занимаемое файлом место на диске с учетом репликации. По умолчанию в данной версии HDFS эти числа будут одинаковы – это означает, что никакой репликации нет – нас это не очень устраивает, мы хотели бы, чтобы у наших файлов существовали резервные копии, поэтому напишите команду, которая изменит фактор репликации на 2.
+[cloudera@quickstart Downloads]$ hdfs dfs -setrep 2 /user/cloudera/onefile.txt
+Replication 2 set: /user/cloudera/onefile.txt
+
+8. Повторите команду, которая выводит информацию о том, какое место на диске занимает файл и убедитесь, что изменения произошли.
+[cloudera@quickstart Downloads]$ hdfs dfs -du -h -x /user/cloudera/onefile.txt
+3.6 M  7.2 M  /user/cloudera/onefile.txt
+
+9. Напишите команду, которая подсчитывает количество строк в вашем файле
+[cloudera@quickstart Downloads]$ hdfs dfs -cat /user/cloudera/onefile.txt | wc -l
+13664
